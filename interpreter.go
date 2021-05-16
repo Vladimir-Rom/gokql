@@ -46,6 +46,8 @@ func (prop propertyMatch) match(evaluator Evaluator) (bool, error) {
 		return matchSubExpression(evaluator, prop)
 	} else if prop.OrValues != nil {
 		return matchOrValues(evaluator, prop)
+	} else if prop.AndValues != nil {
+		return matchAndValues(evaluator, prop)
 	}
 
 	return false, errors.New("not implemented")
@@ -107,6 +109,42 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
+	property, err := evaluator.Evaluate(prop.Name)
+	if err != nil {
+		return false, err
+	}
+
+	propertyValue := reflect.ValueOf(property)
+	kind := propertyValue.Kind()
+	if kind != reflect.Slice {
+		return false, errors.New("property " + prop.Name + " is expected to be a slice")
+	}
+
+	sliceLen := propertyValue.Len()
+
+	for _, item := range prop.AndValues {
+		itemFound := false
+		for i := 0; i < sliceLen; i++ {
+			sliceItem := propertyValue.Index(i).Interface()
+			itemValue, err := equal(sliceItem, &item)
+			if err != nil {
+				return false, err
+			}
+			if itemValue {
+				itemFound = true
+				break
+			}
+		}
+
+		if !itemFound {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func (se subExpression) match(evaluator Evaluator) (bool, error) {

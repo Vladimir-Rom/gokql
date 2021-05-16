@@ -4,7 +4,7 @@ import "testing"
 
 func TestMatch(t *testing.T) {
 	testExpr := func(expression string, obj map[string]interface{}, expectedResult bool) {
-		expr, err := parse(expression)
+		expr, err := Parse(expression)
 		if err != nil {
 			t.Fatal(err)
 		}

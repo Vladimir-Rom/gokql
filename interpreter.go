@@ -75,22 +75,38 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 
 	propertyValue := reflect.ValueOf(property)
 	kind := propertyValue.Kind()
-	if kind != reflect.String && kind != reflect.Int {
+	if kind != reflect.String && kind != reflect.Int && kind != reflect.Slice {
 		return false, errors.New("not implemented")
 	}
 
-	result := false
-	for _, item := range prop.OrValues {
-		if result {
-			return true, nil
+	if kind == reflect.Slice {
+		sliceLen := propertyValue.Len()
+		for i := 0; i < sliceLen; i++ {
+			sliceItem := propertyValue.Index(i).Interface()
+
+			for _, item := range prop.OrValues {
+				itemValue, err := equal(sliceItem, &item)
+				if err != nil {
+					return false, err
+				}
+				if itemValue {
+					return true, nil
+				}
+			}
 		}
-		itemValue, err := equal(property, &item)
-		if err != nil {
-			return false, err
+	} else {
+		for _, item := range prop.OrValues {
+			itemValue, err := equal(property, &item)
+			if err != nil {
+				return false, err
+			}
+			if itemValue {
+				return true, nil
+			}
 		}
-		result = result || itemValue
 	}
-	return result, nil
+
+	return false, nil
 }
 
 func (se subExpression) match(evaluator Evaluator) (bool, error) {

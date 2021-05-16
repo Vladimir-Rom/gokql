@@ -36,61 +36,73 @@ func (m MapEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
 }
 
 func (expression Expression) Match(evaluator Evaluator) (bool, error) {
-	return expression.ast.Match(evaluator)
+	return expression.ast.match(evaluator)
 }
 
-func (prop propertyMatch) Match(evaluator Evaluator) (bool, error) {
+func (prop propertyMatch) match(evaluator Evaluator) (bool, error) {
 	if prop.AtomicValue != nil {
-		property, err := evaluator.Evaluate(prop.Name)
-		if err != nil {
-			return false, err
-		}
-		return equal(property, prop.AtomicValue)
+		return matchAtomicValue(evaluator, prop)
 	} else if prop.ValueSubExpression != nil {
-		subEvaluator, err := evaluator.GetSubEvaluator(prop.Name)
-		if err != nil {
-			return false, err
-		}
-		return prop.ValueSubExpression.Match(subEvaluator)
+		return matchSubExpression(evaluator, prop)
 	} else if prop.OrValues != nil {
-		property, err := evaluator.Evaluate(prop.Name)
-		if err != nil {
-			return false, err
-		}
-
-		propertyValue := reflect.ValueOf(property)
-		kind := propertyValue.Kind()
-		if kind != reflect.String && kind != reflect.Int {
-			return false, errors.New("not implemented")
-		}
-
-		result := false
-		for _, item := range prop.OrValues {
-			if result {
-				return true, nil
-			}
-			itemValue, err := equal(property, &item)
-			if err != nil {
-				return false, err
-			}
-			result = result || itemValue
-		}
-		return result, nil
+		return matchOrValues(evaluator, prop)
 	}
 
 	return false, errors.New("not implemented")
 }
 
-func (se subExpression) Match(evaluator Evaluator) (bool, error) {
+func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
+	property, err := evaluator.Evaluate(prop.Name)
+	if err != nil {
+		return false, err
+	}
+	return equal(property, prop.AtomicValue)
+}
+
+func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
+	subEvaluator, err := evaluator.GetSubEvaluator(prop.Name)
+	if err != nil {
+		return false, err
+	}
+	return prop.ValueSubExpression.match(subEvaluator)
+}
+
+func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
+	property, err := evaluator.Evaluate(prop.Name)
+	if err != nil {
+		return false, err
+	}
+
+	propertyValue := reflect.ValueOf(property)
+	kind := propertyValue.Kind()
+	if kind != reflect.String && kind != reflect.Int {
+		return false, errors.New("not implemented")
+	}
+
+	result := false
+	for _, item := range prop.OrValues {
+		if result {
+			return true, nil
+		}
+		itemValue, err := equal(property, &item)
+		if err != nil {
+			return false, err
+		}
+		result = result || itemValue
+	}
+	return result, nil
+}
+
+func (se subExpression) match(evaluator Evaluator) (bool, error) {
 	var seValue bool
 	var err error
 	if se.SubExpression != nil {
-		seValue, err = se.SubExpression.Match(evaluator)
+		seValue, err = se.SubExpression.match(evaluator)
 		if err != nil {
 			return false, err
 		}
 	} else {
-		seValue, err = se.Value.Match(evaluator)
+		seValue, err = se.Value.match(evaluator)
 		if err != nil {
 			return false, err
 		}
@@ -103,8 +115,8 @@ func (se subExpression) Match(evaluator Evaluator) (bool, error) {
 	}
 }
 
-func (c conjunction) Match(evaluator Evaluator) (bool, error) {
-	result, err := c.LeftValue.Match(evaluator)
+func (c conjunction) match(evaluator Evaluator) (bool, error) {
+	result, err := c.LeftValue.match(evaluator)
 	if err != nil {
 		return false, err
 	}
@@ -115,7 +127,7 @@ func (c conjunction) Match(evaluator Evaluator) (bool, error) {
 		}
 
 		var rightResult bool
-		rightResult, err := right.Match(evaluator)
+		rightResult, err := right.match(evaluator)
 		if err != nil {
 			return false, err
 		}
@@ -126,8 +138,8 @@ func (c conjunction) Match(evaluator Evaluator) (bool, error) {
 	return result, nil
 }
 
-func (d disjunction) Match(evaluator Evaluator) (bool, error) {
-	result, err := d.LeftValue.Match(evaluator)
+func (d disjunction) match(evaluator Evaluator) (bool, error) {
+	result, err := d.LeftValue.match(evaluator)
 	if err != nil {
 		return false, err
 	}
@@ -138,7 +150,7 @@ func (d disjunction) Match(evaluator Evaluator) (bool, error) {
 		}
 
 		var rightResult bool
-		rightResult, err := right.Match(evaluator)
+		rightResult, err := right.match(evaluator)
 		if err != nil {
 			return false, err
 		}
@@ -149,8 +161,8 @@ func (d disjunction) Match(evaluator Evaluator) (bool, error) {
 	return result, nil
 }
 
-func (e expression) Match(evaluator Evaluator) (bool, error) {
-	return e.Expr.Match(evaluator)
+func (e expression) match(evaluator Evaluator) (bool, error) {
+	return e.Expr.match(evaluator)
 }
 
 func equal(property interface{}, atomic *atomicValue) (bool, error) {

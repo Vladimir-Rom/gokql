@@ -25,10 +25,10 @@ func (m MapEvaluator) Evaluate(propertyName string) (interface{}, error) {
 
 func (m MapEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
 	if result, ok := m.Map[propertyName]; !ok {
-		return nil, errors.New("Property " + propertyName + " not found")
+		return nil, errors.New("property " + propertyName + " not found")
 	} else {
 		if innerMap, ok := result.(map[string]interface{}); !ok {
-			return nil, errors.New("Property " + propertyName + " expected to be a 'map[string] interface{}'")
+			return nil, errors.New("property " + propertyName + " expected to be a 'map[string] interface{}'")
 		} else {
 			return MapEvaluator{innerMap}, nil
 		}
@@ -41,17 +41,44 @@ func (expression Expression) Match(evaluator Evaluator) (bool, error) {
 
 func (prop propertyMatch) Match(evaluator Evaluator) (bool, error) {
 	if prop.AtomicValue != nil {
-		return equal(prop.Name, prop.AtomicValue, evaluator)
+		property, err := evaluator.Evaluate(prop.Name)
+		if err != nil {
+			return false, err
+		}
+		return equal(property, prop.AtomicValue)
 	} else if prop.ValueSubExpression != nil {
 		subEvaluator, err := evaluator.GetSubEvaluator(prop.Name)
 		if err != nil {
 			return false, err
 		}
-
 		return prop.ValueSubExpression.Match(subEvaluator)
+	} else if prop.OrValues != nil {
+		property, err := evaluator.Evaluate(prop.Name)
+		if err != nil {
+			return false, err
+		}
+
+		propertyValue := reflect.ValueOf(property)
+		kind := propertyValue.Kind()
+		if kind != reflect.String && kind != reflect.Int {
+			return false, errors.New("not implemented")
+		}
+
+		result := false
+		for _, item := range prop.OrValues {
+			if result {
+				return true, nil
+			}
+			itemValue, err := equal(property, &item)
+			if err != nil {
+				return false, err
+			}
+			result = result || itemValue
+		}
+		return result, nil
 	}
 
-	panic("Not implemented")
+	return false, errors.New("not implemented")
 }
 
 func (se subExpression) Match(evaluator Evaluator) (bool, error) {
@@ -126,12 +153,7 @@ func (e expression) Match(evaluator Evaluator) (bool, error) {
 	return e.Expr.Match(evaluator)
 }
 
-func equal(propertyName string, atomic *atomicValue, evaluator Evaluator) (bool, error) {
-	property, err := evaluator.Evaluate(propertyName)
-	if err != nil {
-		return false, err
-	}
-
+func equal(property interface{}, atomic *atomicValue) (bool, error) {
 	switch v := property.(type) {
 	case string:
 		return v == atomic.Value, nil

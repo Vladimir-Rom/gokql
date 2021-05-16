@@ -41,4 +41,14 @@ func TestMatch(t *testing.T) {
 			"propInt": 42,
 		},
 		false)
+
+	testExpr(
+		"propStr:'value2' or nested:{int:13}",
+		map[string]interface{}{
+			"propStr": "value1",
+			"nested": map[string]interface{}{
+				"int": 13,
+			},
+		},
+		true)
 }

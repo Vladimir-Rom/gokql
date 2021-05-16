@@ -42,6 +42,13 @@ func (expression Expression) Match(evaluator Evaluator) (bool, error) {
 func (prop propertyMatch) Match(evaluator Evaluator) (bool, error) {
 	if prop.AtomicValue != nil {
 		return equal(prop.Name, prop.AtomicValue, evaluator)
+	} else if prop.ValueSubExpression != nil {
+		subEvaluator, err := evaluator.GetSubEvaluator(prop.Name)
+		if err != nil {
+			return false, err
+		}
+
+		return prop.ValueSubExpression.Match(subEvaluator)
 	}
 
 	panic("Not implemented")

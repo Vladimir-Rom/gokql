@@ -22,6 +22,35 @@ func TestMatch(t *testing.T) {
 	}
 
 	testExpr(
+		"a:1 or b>2",
+		map[string]interface{}{
+			"a": "3",
+			"b": 10,
+		},
+		true)
+
+	testExpr(
+		"a>=1",
+		map[string]interface{}{
+			"a": 0,
+		},
+		false)
+
+	testExpr(
+		"a<b",
+		map[string]interface{}{
+			"a": "a",
+		},
+		true)
+
+	testExpr(
+		"a<=b",
+		map[string]interface{}{
+			"a": "b",
+		},
+		true)
+
+	testExpr(
 		"propStr:'value1'",
 		map[string]interface{}{
 			"propStr": "value1",

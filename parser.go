@@ -18,7 +18,8 @@ type atomicValue struct {
 }
 
 type propertyMatch struct {
-	Name               string        `@Literal Colon`
+	Name               string        `@Literal`
+	Operation          string        `@(':' | '<' | '>' | '<=' | '>=')`
 	ValueSubExpression *expression   `( ('{' @@ '}')`
 	AtomicValue        *atomicValue  `| @@`
 	OrValues           []atomicValue `| ('(' @@ ('or' @@)+')')`
@@ -50,7 +51,8 @@ var (
 		{"QuotedString", `'[^']*'`, nil},
 		{"DquotedString", `"[^"]*"`, nil},
 		{"Literal", `[a-zA-Z0-9.*]+`, nil},
-		{"Colon", `:`, nil},
+		{"<=", `<=`, nil},
+		{">=", `>=`, nil},
 		{"whitespace", `[ \t\r\n]+`, nil},
 		{"Any", ".", nil},
 	})
@@ -128,7 +130,7 @@ func (prop propertyMatch) String() string {
 		valueStr += ")"
 	}
 
-	return prop.Name + ":" + valueStr
+	return prop.Name + prop.Operation + valueStr
 }
 
 func (expr subExpression) String() string {

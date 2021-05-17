@@ -64,7 +64,7 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	if propertyValue.Kind() == reflect.Slice {
 		sliceLen := propertyValue.Len()
 		for i := 0; i < sliceLen; i++ {
-			res, err := equal(propertyValue.Index(i).Interface(), prop.AtomicValue)
+			res, err := compare(propertyValue.Index(i).Interface(), prop.AtomicValue, equalOp())
 			if err != nil {
 				return false, err
 			}
@@ -74,7 +74,20 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		}
 		return false, nil
 	} else {
-		return equal(property, prop.AtomicValue)
+		switch prop.Operation {
+		case ":":
+			return compare(property, prop.AtomicValue, equalOp())
+		case ">":
+			return compare(property, prop.AtomicValue, greaterOp())
+		case ">=":
+			return compare(property, prop.AtomicValue, greaterOrEqualOp())
+		case "<":
+			return compare(property, prop.AtomicValue, lessOp())
+		case "<=":
+			return compare(property, prop.AtomicValue, lessOrEqualOp())
+		default:
+			panic("unknown operation " + prop.Operation)
+		}
 	}
 
 }
@@ -105,7 +118,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 			sliceItem := propertyValue.Index(i).Interface()
 
 			for _, item := range prop.OrValues {
-				itemValue, err := equal(sliceItem, &item)
+				itemValue, err := compare(sliceItem, &item, equalOp())
 				if err != nil {
 					return false, err
 				}
@@ -116,7 +129,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		}
 	} else {
 		for _, item := range prop.OrValues {
-			itemValue, err := equal(property, &item)
+			itemValue, err := compare(property, &item, equalOp())
 			if err != nil {
 				return false, err
 			}
@@ -147,7 +160,7 @@ func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		itemFound := false
 		for i := 0; i < sliceLen; i++ {
 			sliceItem := propertyValue.Index(i).Interface()
-			itemValue, err := equal(sliceItem, &item)
+			itemValue, err := compare(sliceItem, &item, equalOp())
 			if err != nil {
 				return false, err
 			}
@@ -237,21 +250,81 @@ func (e expression) match(evaluator Evaluator) (bool, error) {
 	return e.Expr.match(evaluator)
 }
 
-func equal(property interface{}, atomic *atomicValue) (bool, error) {
+type operation struct {
+	compareStr func(string, string, wildcard) bool
+	compareInt func(int, int) bool
+}
+
+func equalOp() operation {
+	return operation{
+		compareStr: func(left string, right string, wildcard wildcard) bool {
+			return wildcard.Match(left)
+		},
+		compareInt: func(left int, right int) bool {
+			return left == right
+		},
+	}
+}
+
+func greaterOp() operation {
+	return operation{
+		compareStr: func(left string, right string, wildcard wildcard) bool {
+			return left > right
+		},
+		compareInt: func(left int, right int) bool {
+			return left > right
+		},
+	}
+}
+
+func greaterOrEqualOp() operation {
+	return operation{
+		compareStr: func(left string, right string, wildcard wildcard) bool {
+			return left >= right
+		},
+		compareInt: func(left int, right int) bool {
+			return left >= right
+		},
+	}
+}
+
+func lessOp() operation {
+	return operation{
+		compareStr: func(left string, right string, wildcard wildcard) bool {
+			return left < right
+		},
+		compareInt: func(left int, right int) bool {
+			return left < right
+		},
+	}
+}
+
+func lessOrEqualOp() operation {
+	return operation{
+		compareStr: func(left string, right string, wildcard wildcard) bool {
+			return left <= right
+		},
+		compareInt: func(left int, right int) bool {
+			return left <= right
+		},
+	}
+}
+
+func compare(property interface{}, atomic *atomicValue, operation operation) (bool, error) {
 	switch v := property.(type) {
 	case string:
-		return atomic.wildcard.Match(v), nil
+		return operation.compareStr(v, atomic.Value, atomic.wildcard), nil
 	case int:
 		convertedValue := atomic.convertedValue
 		if intValue, ok := convertedValue.(int); ok {
-			return v == intValue, nil
+			return operation.compareInt(v, intValue), nil
 		}
 		intValue, err := strconv.Atoi(atomic.Value)
 		if err != nil {
 			return false, err
 		}
 		atomic.convertedValue = intValue
-		return v == intValue, nil
+		return operation.compareInt(v, intValue), nil
 	default:
 		return false, errors.New("Unsupported property type: " + reflect.TypeOf(property).Name())
 	}

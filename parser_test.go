@@ -19,6 +19,7 @@ func TestParse(t *testing.T) {
 	testExpr("a:c or b:2 and c:3", "(a:c or (b:2 and c:3))")
 	testExpr("(a:c or b:2) and c:3", "((a:c or b:2) and c:3)")
 	testExpr(
-		"a.b:c or b:2 and (c:3 or d:{da:a or db:'b'}) or list:(1 or 2 or 3)",
-		"(a.b:c or (b:2 and (c:3 or d:{(da:a or db:b)})) or list:(1 or 2 or 3))")
+		"a.b:c or b:2 and (c<=3 or d:{da:a or db:'b'}) or list:(1 or 2 or 3)",
+		"(a.b:c or (b:2 and (c<=3 or d:{(da:a or db:b)})) or list:(1 or 2 or 3))")
+	testExpr("a>0 or b<1 or c>=1 or d<=1", "(a>0 or b<1 or c>=1 or d<=1)")
 }

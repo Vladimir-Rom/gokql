@@ -88,4 +88,11 @@ func TestMatch(t *testing.T) {
 			"prop": []int{0, 2, 3},
 		},
 		true)
+
+	testExpr(
+		"prop:2",
+		map[string]interface{}{
+			"prop": []int{0, 2, 3},
+		},
+		true)
 }

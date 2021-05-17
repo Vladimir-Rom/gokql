@@ -58,7 +58,25 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return equal(property, prop.AtomicValue)
+
+	propertyValue := reflect.ValueOf(property)
+
+	if propertyValue.Kind() == reflect.Slice {
+		sliceLen := propertyValue.Len()
+		for i := 0; i < sliceLen; i++ {
+			res, err := equal(propertyValue.Index(i).Interface(), prop.AtomicValue)
+			if err != nil {
+				return false, err
+			}
+			if res {
+				return true, nil
+			}
+		}
+		return false, nil
+	} else {
+		return equal(property, prop.AtomicValue)
+	}
+
 }
 
 func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {

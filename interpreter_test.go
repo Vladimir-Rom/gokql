@@ -22,6 +22,13 @@ func TestMatch(t *testing.T) {
 	}
 
 	testExpr(
+		"propStr:'value1'",
+		map[string]interface{}{
+			"propStr": "value1",
+		},
+		true)
+
+	testExpr(
 		"propStr:'value*'",
 		map[string]interface{}{
 			"propStr": "value1",
@@ -29,7 +36,7 @@ func TestMatch(t *testing.T) {
 		true)
 
 	testExpr(
-		"propStr:'value1'",
+		"propStr:value*",
 		map[string]interface{}{
 			"propStr": "value1",
 		},
@@ -93,6 +100,13 @@ func TestMatch(t *testing.T) {
 		"prop:2",
 		map[string]interface{}{
 			"prop": []int{0, 2, 3},
+		},
+		true)
+
+	testExpr(
+		"prop:'a*'",
+		map[string]interface{}{
+			"prop": []string{"bbb", "abc", "ccc"},
 		},
 		true)
 }

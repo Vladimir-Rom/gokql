@@ -49,7 +49,7 @@ var (
 	lexer, _ = stateful.NewSimple([]stateful.Rule{
 		{"QuotedString", `'[^']*'`, nil},
 		{"DquotedString", `"[^"]*"`, nil},
-		{"Literal", `[a-zA-Z0-9.]+`, nil},
+		{"Literal", `[a-zA-Z0-9.*]+`, nil},
 		{"Colon", `:`, nil},
 		{"whitespace", `[ \t\r\n]+`, nil},
 		{"Any", ".", nil},

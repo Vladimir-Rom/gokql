@@ -222,7 +222,7 @@ func (e expression) match(evaluator Evaluator) (bool, error) {
 func equal(property interface{}, atomic *atomicValue) (bool, error) {
 	switch v := property.(type) {
 	case string:
-		return v == atomic.Value, nil
+		return atomic.wildcard.Match(v), nil
 	case int:
 		convertedValue := atomic.convertedValue
 		if intValue, ok := convertedValue.(int); ok {

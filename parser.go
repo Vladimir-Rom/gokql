@@ -14,6 +14,7 @@ type Expression struct {
 type atomicValue struct {
 	Value          string `@Literal | @QuotedString | @DquotedString`
 	convertedValue interface{}
+	wildcard       wildcard
 }
 
 type propertyMatch struct {
@@ -70,6 +71,7 @@ func parse(query string) (*expression, error) {
 	visitor := visitor{}
 	visitor.atomicValue = func(atomic *atomicValue) {
 		atomic.Value = unquote(atomic.Value)
+		atomic.wildcard = newWildcard(atomic.Value)
 	}
 	expr.visit(visitor)
 

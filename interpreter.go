@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 type Evaluator interface {
@@ -251,8 +252,9 @@ func (e expression) match(evaluator Evaluator) (bool, error) {
 }
 
 type operation struct {
-	compareStr func(string, string, wildcard) bool
-	compareInt func(int, int) bool
+	compareStr  func(string, string, wildcard) bool
+	compareInt  func(int, int) bool
+	compareTime func(time.Time, time.Time) bool
 }
 
 func equalOp() operation {
@@ -262,6 +264,9 @@ func equalOp() operation {
 		},
 		compareInt: func(left int, right int) bool {
 			return left == right
+		},
+		compareTime: func(left time.Time, right time.Time) bool {
+			return left.Equal(right)
 		},
 	}
 }
@@ -274,6 +279,9 @@ func greaterOp() operation {
 		compareInt: func(left int, right int) bool {
 			return left > right
 		},
+		compareTime: func(left time.Time, right time.Time) bool {
+			return left.After(right)
+		},
 	}
 }
 
@@ -284,6 +292,9 @@ func greaterOrEqualOp() operation {
 		},
 		compareInt: func(left int, right int) bool {
 			return left >= right
+		},
+		compareTime: func(left time.Time, right time.Time) bool {
+			return left.Equal(right) || left.After(right)
 		},
 	}
 }
@@ -296,6 +307,9 @@ func lessOp() operation {
 		compareInt: func(left int, right int) bool {
 			return left < right
 		},
+		compareTime: func(left time.Time, right time.Time) bool {
+			return left.Before(right)
+		},
 	}
 }
 
@@ -306,6 +320,9 @@ func lessOrEqualOp() operation {
 		},
 		compareInt: func(left int, right int) bool {
 			return left <= right
+		},
+		compareTime: func(left time.Time, right time.Time) bool {
+			return left.Equal(right) || left.Before(right)
 		},
 	}
 }
@@ -325,6 +342,17 @@ func compare(property interface{}, atomic *atomicValue, operation operation) (bo
 		}
 		atomic.convertedValue = intValue
 		return operation.compareInt(v, intValue), nil
+	case time.Time:
+		convertedValue := atomic.convertedValue
+		if timeValue, ok := convertedValue.(time.Time); ok {
+			return operation.compareTime(v, timeValue), nil
+		}
+		timeValue, err := time.Parse(time.RFC3339, atomic.Value)
+		if err != nil {
+			return false, err
+		}
+		atomic.convertedValue = timeValue
+		return operation.compareTime(v, timeValue), nil
 	default:
 		return false, errors.New("Unsupported property type: " + reflect.TypeOf(property).Name())
 	}

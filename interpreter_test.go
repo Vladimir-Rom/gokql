@@ -2,6 +2,7 @@ package gokql
 
 import (
 	"testing"
+	"time"
 )
 
 func TestMatch(t *testing.T) {
@@ -26,6 +27,14 @@ func TestMatch(t *testing.T) {
 		map[string]interface{}{
 			"a": "3",
 			"b": 10,
+		},
+		true)
+
+	testExpr(
+		"a:1 or b > '2021-05-17T01:00:00Z'",
+		map[string]interface{}{
+			"a": "3",
+			"b": time.Now(),
 		},
 		true)
 

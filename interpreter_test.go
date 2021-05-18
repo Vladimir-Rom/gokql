@@ -18,7 +18,7 @@ func TestMatch(t *testing.T) {
 		}
 
 		if result != expectedResult {
-			t.Errorf("Unexpected match result: %v", result)
+			t.Errorf("Unexpected match result: %v for expression %s", result, expression)
 		}
 	}
 
@@ -163,6 +163,7 @@ func init() {
 		map[string]interface{}{
 			"prop1": 42,
 		}}
+	expr.Match(evaluator)
 }
 
 func BenchmarkMatch(b *testing.B) {

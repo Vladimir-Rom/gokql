@@ -1,6 +1,7 @@
 package gokql
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/alecthomas/participle"
@@ -12,9 +13,10 @@ type Expression struct {
 }
 
 type atomicValue struct {
-	Value          string `@Literal | @QuotedString | @DquotedString`
-	convertedValue interface{}
-	wildcard       wildcard
+	Value     string `@Literal | @QuotedString | @DquotedString`
+	wildcard  wildcard
+	valueType reflect.Type
+	comparer  func(propertyValue interface{}) bool
 }
 
 type propertyMatch struct {

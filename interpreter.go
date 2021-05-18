@@ -64,7 +64,7 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	if propertyValue.Kind() == reflect.Slice {
 		sliceLen := propertyValue.Len()
 		for i := 0; i < sliceLen; i++ {
-			res, err := compare(propertyValue.Index(i).Interface(), prop.AtomicValue, equalComparer{})
+			res, err := compare(propertyValue.Index(i).Interface(), prop.AtomicValue, equalCmp{})
 			if err != nil {
 				return false, err
 			}
@@ -76,15 +76,15 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	} else {
 		switch prop.Operation {
 		case ":":
-			return compare(property, prop.AtomicValue, equalComparer{})
+			return compare(property, prop.AtomicValue, equalCmp{})
 		case ">":
-			return compare(property, prop.AtomicValue, greaterComparer{})
+			return compare(property, prop.AtomicValue, greaterCmp{})
 		case ">=":
-			return compare(property, prop.AtomicValue, greaterOrEqualComparer{})
+			return compare(property, prop.AtomicValue, greaterOrEqualCmp{})
 		case "<":
-			return compare(property, prop.AtomicValue, lessComparer{})
+			return compare(property, prop.AtomicValue, lessCmp{})
 		case "<=":
-			return compare(property, prop.AtomicValue, lessOrEqualComparer{})
+			return compare(property, prop.AtomicValue, lessOrEqualCmp{})
 		default:
 			panic("unknown operation " + prop.Operation)
 		}
@@ -118,7 +118,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 			sliceItem := propertyValue.Index(i).Interface()
 
 			for _, item := range prop.OrValues {
-				itemValue, err := compare(sliceItem, &item, equalComparer{})
+				itemValue, err := compare(sliceItem, &item, equalCmp{})
 				if err != nil {
 					return false, err
 				}
@@ -129,7 +129,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		}
 	} else {
 		for _, item := range prop.OrValues {
-			itemValue, err := compare(property, &item, equalComparer{})
+			itemValue, err := compare(property, &item, equalCmp{})
 			if err != nil {
 				return false, err
 			}
@@ -160,7 +160,7 @@ func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		itemFound := false
 		for i := 0; i < sliceLen; i++ {
 			sliceItem := propertyValue.Index(i).Interface()
-			itemValue, err := compare(sliceItem, &item, equalComparer{})
+			itemValue, err := compare(sliceItem, &item, equalCmp{})
 			if err != nil {
 				return false, err
 			}
@@ -250,122 +250,113 @@ func (e expression) match(evaluator Evaluator) (bool, error) {
 	return e.Expr.match(evaluator)
 }
 
+type comparer interface {
+	compare(handler typeHandler, left interface{}, right interface{}) bool
+}
+
+type equalCmp struct{}
+
+func (equalCmp) compare(handler typeHandler, left interface{}, right interface{}) bool {
+	return handler.equal(left, right)
+}
+
+type greaterCmp struct{}
+
+func (greaterCmp) compare(handler typeHandler, left interface{}, right interface{}) bool {
+	return handler.greater(left, right)
+}
+
+type lessCmp struct{}
+
+func (lessCmp) compare(handler typeHandler, left interface{}, right interface{}) bool {
+	return handler.less(left, right)
+}
+
+type greaterOrEqualCmp struct{}
+
+func (greaterOrEqualCmp) compare(handler typeHandler, left interface{}, right interface{}) bool {
+	return handler.greaterOrEqual(left, right)
+}
+
+type lessOrEqualCmp struct{}
+
+func (lessOrEqualCmp) compare(handler typeHandler, left interface{}, right interface{}) bool {
+	return handler.lessOrEqual(left, right)
+}
+
 func compare(property interface{}, atomic *atomicValue, comparer comparer) (bool, error) {
 	switch v := property.(type) {
-	case string:
-		left := v
-		right := atomic.Value
-		res, _ := comparer.compare(
-			compareOperations{
-				equal:          func() (bool, bool) { return atomic.wildcard.Match(left), true },
-				greater:        func() (bool, bool) { return left > right, true },
-				less:           func() (bool, bool) { return left < right, true },
-				greaterOrEqual: func() (bool, bool) { return left >= right, true },
-				lessOrEqual:    func() (bool, bool) { return left <= right, true },
-			})
-		return res, nil
-
 	case int:
-		return compareValues(atomic, comparer, int64TypeHandler{}, int64(v))
+		return compareWithConvertedType(int64(v), atomic, comparer)
 	case int8:
-		return compareValues(atomic, comparer, int64TypeHandler{}, int64(v))
+		return compareWithConvertedType(int64(v), atomic, comparer)
 	case int16:
-		return compareValues(atomic, comparer, int64TypeHandler{}, int64(v))
+		return compareWithConvertedType(int64(v), atomic, comparer)
 	case int32:
-		return compareValues(atomic, comparer, int64TypeHandler{}, int64(v))
-	case int64:
-		return compareValues(atomic, comparer, int64TypeHandler{}, v)
+		return compareWithConvertedType(int64(v), atomic, comparer)
 	case uint:
-		return compareValues(atomic, comparer, uint64TypeHandler{}, uint64(v))
+		return compareWithConvertedType(uint64(v), atomic, comparer)
 	case uint8:
-		return compareValues(atomic, comparer, uint64TypeHandler{}, uint64(v))
+		return compareWithConvertedType(uint64(v), atomic, comparer)
 	case uint16:
-		return compareValues(atomic, comparer, uint64TypeHandler{}, uint64(v))
+		return compareWithConvertedType(uint64(v), atomic, comparer)
 	case uint32:
-		return compareValues(atomic, comparer, uint64TypeHandler{}, uint64(v))
-	case uint64:
-		return compareValues(atomic, comparer, uint64TypeHandler{}, v)
-	case bool:
-		return compareValues(atomic, comparer, boolTypeHandler{}, v)
-	case float64:
-		return compareValues(atomic, comparer, float64TypeHandler{}, v)
+		return compareWithConvertedType(uint64(v), atomic, comparer)
 	case float32:
-		return compareValues(atomic, comparer, float64TypeHandler{}, float64(v))
-	case time.Time:
-		return compareValues(atomic, comparer, timeTypeHandler{}, v)
-	case time.Duration:
-		return compareValues(atomic, comparer, durationTypeHandler{}, v)
+		return compareWithConvertedType(float64(v), atomic, comparer)
 
 	default:
-		return false, errors.New("Unsupported property type: " + reflect.TypeOf(property).Name())
+		return compareWithConvertedType(property, atomic, comparer)
 	}
 }
 
-type comparer interface {
-	compare(compareOperations) (result bool, ok bool)
-}
+func compareWithConvertedType(property interface{}, atomic *atomicValue, comparer comparer) (bool, error) {
+	propertyType := reflect.TypeOf(property)
+	if atomic.comparer == nil || atomic.valueType != propertyType {
+		var err error
+		atomic.comparer, err = createComparer(property, atomic, comparer)
+		if err != nil {
+			return false, err
+		}
 
-type compareOperations struct {
-	equal          func() (result bool, ok bool)
-	greater        func() (result bool, ok bool)
-	less           func() (result bool, ok bool)
-	greaterOrEqual func() (result bool, ok bool)
-	lessOrEqual    func() (result bool, ok bool)
-}
-
-type equalComparer struct{}
-
-func (equalComparer) compare(compareOperations compareOperations) (result bool, ok bool) {
-	return compareOperations.equal()
-}
-
-type greaterComparer struct{}
-
-func (greaterComparer) compare(compareOperations compareOperations) (result bool, ok bool) {
-	return compareOperations.greater()
-}
-
-type greaterOrEqualComparer struct{}
-
-func (greaterOrEqualComparer) compare(compareOperations compareOperations) (result bool, ok bool) {
-	return compareOperations.greaterOrEqual()
-}
-
-type lessComparer struct{}
-
-func (lessComparer) compare(compareOperations compareOperations) (result bool, ok bool) {
-	return compareOperations.less()
-}
-
-type lessOrEqualComparer struct{}
-
-func (lessOrEqualComparer) compare(compareOperations compareOperations) (result bool, ok bool) {
-	return compareOperations.lessOrEqual()
-}
-
-func compareValues(atomic *atomicValue, comparer comparer, handler typeHandler, value interface{}) (bool, error) {
-	compare := func(left interface{}, right interface{}) (result bool, ok bool) {
-		return comparer.compare(
-			compareOperations{
-				equal:          func() (bool, bool) { return handler.equal(left, right) },
-				greater:        func() (bool, bool) { return handler.greater(left, right) },
-				less:           func() (bool, bool) { return handler.less(left, right) },
-				greaterOrEqual: func() (bool, bool) { return handler.greaterOrEqual(left, right) },
-				lessOrEqual:    func() (bool, bool) { return handler.lessOrEqual(left, right) },
-			})
+		atomic.valueType = propertyType
 	}
 
-	convertedValue := atomic.convertedValue
-	if res, ok := compare(convertedValue, value); ok {
-		return res, nil
+	return atomic.comparer(property), nil
+}
+
+func createComparer(propertyValue interface{}, atomic *atomicValue, comparer comparer) (func(propertyValue interface{}) bool, error) {
+	switch propertyValue.(type) {
+	case string:
+		return createComparerForHandler(stringTypeHandler{atomic.wildcard}, propertyValue, atomic, comparer)
+	case int64:
+		return createComparerForHandler(int64TypeHandler{}, propertyValue, atomic, comparer)
+	case uint64:
+		return createComparerForHandler(uint64TypeHandler{}, propertyValue, atomic, comparer)
+	case float64:
+		return createComparerForHandler(float64TypeHandler{}, propertyValue, atomic, comparer)
+	case bool:
+		return createComparerForHandler(boolTypeHandler{}, propertyValue, atomic, comparer)
+	case time.Time:
+		return createComparerForHandler(timeTypeHandler{}, propertyValue, atomic, comparer)
+	case time.Duration:
+		return createComparerForHandler(durationTypeHandler{}, propertyValue, atomic, comparer)
 	}
 
-	convertedValue, err := handler.convert(atomic.Value)
+	return nil, errors.New("unsupported property type " + reflect.TypeOf(propertyValue).Name())
+}
+
+func createComparerForHandler(
+	handler typeHandler,
+	propertyValue interface{},
+	atomic *atomicValue,
+	comparer comparer) (func(propertyValue interface{}) bool, error) {
+	requestValue, err := handler.convert(atomic.Value)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	atomic.convertedValue = convertedValue
-	res, _ := compare(convertedValue, value)
-	return res, nil
+	return func(propertyValue interface{}) bool {
+		return comparer.compare(handler, propertyValue, requestValue)
+	}, nil
 }

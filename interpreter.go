@@ -65,7 +65,7 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	if propertyValue.Kind() == reflect.Slice {
 		sliceLen := propertyValue.Len()
 		for i := 0; i < sliceLen; i++ {
-			res, err := compare(propertyValue.Index(i).Interface(), prop.AtomicValue, equalOp())
+			res, err := compare(propertyValue.Index(i).Interface(), prop.AtomicValue, equalOp{})
 			if err != nil {
 				return false, err
 			}
@@ -77,15 +77,15 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	} else {
 		switch prop.Operation {
 		case ":":
-			return compare(property, prop.AtomicValue, equalOp())
+			return compare(property, prop.AtomicValue, equalOp{})
 		case ">":
-			return compare(property, prop.AtomicValue, greaterOp())
+			return compare(property, prop.AtomicValue, greaterOp{})
 		case ">=":
-			return compare(property, prop.AtomicValue, greaterOrEqualOp())
+			return compare(property, prop.AtomicValue, greaterOrEqualOp{})
 		case "<":
-			return compare(property, prop.AtomicValue, lessOp())
+			return compare(property, prop.AtomicValue, lessOp{})
 		case "<=":
-			return compare(property, prop.AtomicValue, lessOrEqualOp())
+			return compare(property, prop.AtomicValue, lessOrEqualOp{})
 		default:
 			panic("unknown operation " + prop.Operation)
 		}
@@ -119,7 +119,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 			sliceItem := propertyValue.Index(i).Interface()
 
 			for _, item := range prop.OrValues {
-				itemValue, err := compare(sliceItem, &item, equalOp())
+				itemValue, err := compare(sliceItem, &item, equalOp{})
 				if err != nil {
 					return false, err
 				}
@@ -130,7 +130,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		}
 	} else {
 		for _, item := range prop.OrValues {
-			itemValue, err := compare(property, &item, equalOp())
+			itemValue, err := compare(property, &item, equalOp{})
 			if err != nil {
 				return false, err
 			}
@@ -161,7 +161,7 @@ func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		itemFound := false
 		for i := 0; i < sliceLen; i++ {
 			sliceItem := propertyValue.Index(i).Interface()
-			itemValue, err := compare(sliceItem, &item, equalOp())
+			itemValue, err := compare(sliceItem, &item, equalOp{})
 			if err != nil {
 				return false, err
 			}
@@ -251,97 +251,106 @@ func (e expression) match(evaluator Evaluator) (bool, error) {
 	return e.Expr.match(evaluator)
 }
 
-type operation struct {
-	compareStr  func(string, string, wildcard) bool
-	compareInt  func(int, int) bool
-	compareTime func(time.Time, time.Time) bool
+type operation interface {
+	compareStr(string, string, wildcard) bool
+	compareInt(int64, int64) bool
+	compareTime(time.Time, time.Time) bool
 }
 
-func equalOp() operation {
-	return operation{
-		compareStr: func(left string, right string, wildcard wildcard) bool {
-			return wildcard.Match(left)
-		},
-		compareInt: func(left int, right int) bool {
-			return left == right
-		},
-		compareTime: func(left time.Time, right time.Time) bool {
-			return left.Equal(right)
-		},
-	}
+type equalOp struct{}
+
+func (equalOp) compareStr(left string, right string, wildcard wildcard) bool {
+	return wildcard.Match(left)
 }
 
-func greaterOp() operation {
-	return operation{
-		compareStr: func(left string, right string, wildcard wildcard) bool {
-			return left > right
-		},
-		compareInt: func(left int, right int) bool {
-			return left > right
-		},
-		compareTime: func(left time.Time, right time.Time) bool {
-			return left.After(right)
-		},
-	}
+func (equalOp) compareInt(left int64, right int64) bool {
+	return left == right
 }
 
-func greaterOrEqualOp() operation {
-	return operation{
-		compareStr: func(left string, right string, wildcard wildcard) bool {
-			return left >= right
-		},
-		compareInt: func(left int, right int) bool {
-			return left >= right
-		},
-		compareTime: func(left time.Time, right time.Time) bool {
-			return left.Equal(right) || left.After(right)
-		},
-	}
+func (equalOp) compareUint(left uint64, right uint64) bool {
+	return left == right
 }
 
-func lessOp() operation {
-	return operation{
-		compareStr: func(left string, right string, wildcard wildcard) bool {
-			return left < right
-		},
-		compareInt: func(left int, right int) bool {
-			return left < right
-		},
-		compareTime: func(left time.Time, right time.Time) bool {
-			return left.Before(right)
-		},
-	}
+func (equalOp) compareTime(left time.Time, right time.Time) bool {
+	return left.Equal(right)
 }
 
-func lessOrEqualOp() operation {
-	return operation{
-		compareStr: func(left string, right string, wildcard wildcard) bool {
-			return left <= right
-		},
-		compareInt: func(left int, right int) bool {
-			return left <= right
-		},
-		compareTime: func(left time.Time, right time.Time) bool {
-			return left.Equal(right) || left.Before(right)
-		},
-	}
+type greaterOp struct{}
+
+func (greaterOp) compareStr(left string, right string, wildcard wildcard) bool {
+	return left > right
+}
+
+func (greaterOp) compareInt(left int64, right int64) bool {
+	return left > right
+}
+
+func (greaterOp) compareUint(left uint64, right uint64) bool {
+	return left > right
+}
+
+func (greaterOp) compareTime(left time.Time, right time.Time) bool {
+	return left.After(right)
+}
+
+type greaterOrEqualOp struct{}
+
+func (greaterOrEqualOp) compareStr(left string, right string, wildcard wildcard) bool {
+	return left >= right
+}
+
+func (greaterOrEqualOp) compareInt(left int64, right int64) bool {
+	return left >= right
+}
+
+func (greaterOrEqualOp) compareTime(left time.Time, right time.Time) bool {
+	return left.Equal(right) || left.After(right)
+}
+
+type lessOp struct{}
+
+func (lessOp) compareStr(left string, right string, wildcard wildcard) bool {
+	return left < right
+}
+
+func (lessOp) compareInt(left int64, right int64) bool {
+	return left < right
+}
+
+func (lessOp) compareTime(left time.Time, right time.Time) bool {
+	return left.Before(right)
+}
+
+type lessOrEqualOp struct{}
+
+func (lessOrEqualOp) compareStr(left string, right string, wildcard wildcard) bool {
+	return left <= right
+}
+
+func (lessOrEqualOp) compareInt(left int64, right int64) bool {
+	return left <= right
+}
+
+func (lessOrEqualOp) compareTime(left time.Time, right time.Time) bool {
+	return left.Equal(right) || left.Before(right)
 }
 
 func compare(property interface{}, atomic *atomicValue, operation operation) (bool, error) {
 	switch v := property.(type) {
 	case string:
 		return operation.compareStr(v, atomic.Value, atomic.wildcard), nil
+	case byte:
+		return compareInt(atomic, operation, int64(v))
 	case int:
-		convertedValue := atomic.convertedValue
-		if intValue, ok := convertedValue.(int); ok {
-			return operation.compareInt(v, intValue), nil
-		}
-		intValue, err := strconv.Atoi(atomic.Value)
-		if err != nil {
-			return false, err
-		}
-		atomic.convertedValue = intValue
-		return operation.compareInt(v, intValue), nil
+		return compareInt(atomic, operation, int64(v))
+	case int8:
+		return compareInt(atomic, operation, int64(v))
+	case int16:
+		return compareInt(atomic, operation, int64(v))
+	case int32:
+		return compareInt(atomic, operation, int64(v))
+	case int64:
+		return compareInt(atomic, operation, v)
 	case time.Time:
 		convertedValue := atomic.convertedValue
 		if timeValue, ok := convertedValue.(time.Time); ok {
@@ -356,4 +365,17 @@ func compare(property interface{}, atomic *atomicValue, operation operation) (bo
 	default:
 		return false, errors.New("Unsupported property type: " + reflect.TypeOf(property).Name())
 	}
+}
+
+func compareInt(atomic *atomicValue, operation operation, v int64) (bool, error) {
+	convertedValue := atomic.convertedValue
+	if intValue, ok := convertedValue.(int64); ok {
+		return operation.compareInt(v, intValue), nil
+	}
+	intValue, err := strconv.ParseInt(atomic.Value, 10, 64)
+	if err != nil {
+		return false, err
+	}
+	atomic.convertedValue = intValue
+	return operation.compareInt(v, intValue), nil
 }

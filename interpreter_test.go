@@ -148,3 +148,25 @@ func TestMatch(t *testing.T) {
 		},
 		true)
 }
+
+var expr *Expression
+var evaluator MapEvaluator
+
+func init() {
+	var err error
+	expr, err = Parse("prop1: 42")
+	if err != nil {
+		panic(err)
+	}
+
+	evaluator = MapEvaluator{
+		map[string]interface{}{
+			"prop1": 42,
+		}}
+}
+
+func BenchmarkMatch(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		expr.Match(evaluator)
+	}
+}

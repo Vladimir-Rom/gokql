@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var expr *Expression
+var expr Expression
 var evaluator MapEvaluator
 
 func init() {

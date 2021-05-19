@@ -35,14 +35,19 @@ func (m MapEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
 }
 
 type ReflectEvaluator struct {
-	value reflect.Value
+	value *reflect.Value
 }
 
 func NewReflectEvaluator(value interface{}) ReflectEvaluator {
-	return ReflectEvaluator{reflect.ValueOf(value)}
+	val := reflect.ValueOf(value)
+	return ReflectEvaluator{&val}
 }
 
 func (eval ReflectEvaluator) Evaluate(propertyName string) (interface{}, error) {
+	if eval.value == nil {
+		panic("evaluator is not initialized")
+	}
+
 	res := eval.value.FieldByName(propertyName)
 	if res == (reflect.Value{}) {
 		return nil, errors.New("property " + propertyName + " not found")
@@ -52,6 +57,10 @@ func (eval ReflectEvaluator) Evaluate(propertyName string) (interface{}, error) 
 }
 
 func (eval ReflectEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
+	if eval.value == nil {
+		panic("evaluator is not initialized")
+	}
+
 	prop, err := eval.Evaluate(propertyName)
 	if err != nil {
 		return nil, err

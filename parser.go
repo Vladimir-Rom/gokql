@@ -82,13 +82,13 @@ func parse(query string) (*expression, error) {
 	return &expr, err
 }
 
-func Parse(query string) (*Expression, error) {
+func Parse(query string) (Expression, error) {
 	ast, err := parse(query)
 	if err != nil {
-		return nil, err
+		return Expression{}, err
 	}
 
-	return &Expression{ast}, nil
+	return Expression{ast}, nil
 }
 
 type visitor struct {

@@ -1,8 +1,8 @@
 # gokql - Kibana Query Language (KQL) interpreter for Go
 
-Kibana Query Language (KQL) - it is a simple query language for filtering objects used in Kibana. KQL syntax is described here: https://www.elastic.co/guide/en/kibana/master/kuery-query.html
+Kibana Query Language (KQL) - it`s a simple query language for filtering objects used in Kibana. KQL syntax is described here: https://www.elastic.co/guide/en/kibana/master/kuery-query.html
 
-gokql - is a Go package for embedding KQL into Go applications. It can be used in a command line utility to receive filters from a command line. Example of such utility is the docker tool:  
+gokql - is a Go package for embedding KQL into Go applications. For example it can be used in a command line utility to receive filters from a command line parameter. Example of such utility is the docker tool:  
 ```shell
 $ docker ps --filter "label=value"
 ```
@@ -12,7 +12,7 @@ If docker used KQL for filters, the command would be as follows:
 $ docker ps --filter "label:value"
 ```
 
-To filer your data using gokql you need parse query by method goqkl.Parse, then call method Match on returned value:
+To filer your data using gokql you need to parse query by method goqkl.Parse, then call method Match on the returned value:
 
 ```go
 // Parse query
@@ -20,8 +20,8 @@ expression, err := gokql.Parse("Label:value1")
 ...
 // then perform matching
 someItem := struct {
-    Label []string {"value1", "value2"}
-}
+    Label []string
+}{[]string{"value1", "value2"}}
 matched, err := expression.Match(gokql.NewReflectEvaluator(someItem))
 if err != nil {
     ...

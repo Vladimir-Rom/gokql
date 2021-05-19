@@ -170,7 +170,7 @@ func (t boolTypeHandler) lessOrEqual(left interface{}, right interface{}) bool {
 type float64TypeHandler struct{}
 
 func (float64TypeHandler) convert(value string) (result interface{}, err error) {
-	return strconv.ParseBool(value)
+	return strconv.ParseFloat(value, 64)
 }
 
 func (t float64TypeHandler) equal(left interface{}, right interface{}) bool {

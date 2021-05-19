@@ -49,7 +49,7 @@ expression, err := gokql.Parse("Label:value1")
 someItem := map[string]interface{} {
     "Label": []string {"value1", "value2"},
 }
-matched, err := expression.Match(MapEvaluator{someItem})
+matched, err := expression.Match(gokql.MapEvaluator{someItem})
 ```
 
 Method Evaluator.GetSubEvaluator is used by qokql for nested query syntax: `nestedProperty:{value:foo}`:
@@ -64,7 +64,7 @@ someItem := map[string]interface{} {
         "value": "foo",
     },
 }
-matched, err := expression.Match(MapEvaluator{someItem})
+matched, err := expression.Match(gokql.MapEvaluator{someItem})
 ```
 
 

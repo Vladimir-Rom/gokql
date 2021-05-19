@@ -6,35 +6,6 @@ import (
 	"time"
 )
 
-type Evaluator interface {
-	Evaluate(propertyName string) (interface{}, error)
-	GetSubEvaluator(propertyName string) (Evaluator, error)
-}
-
-type MapEvaluator struct {
-	Map map[string]interface{}
-}
-
-func (m MapEvaluator) Evaluate(propertyName string) (interface{}, error) {
-	if result, ok := m.Map[propertyName]; !ok {
-		return nil, errors.New("Property " + propertyName + " not found")
-	} else {
-		return result, nil
-	}
-}
-
-func (m MapEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
-	if result, ok := m.Map[propertyName]; !ok {
-		return nil, errors.New("property " + propertyName + " not found")
-	} else {
-		if innerMap, ok := result.(map[string]interface{}); !ok {
-			return nil, errors.New("property " + propertyName + " expected to be a 'map[string] interface{}'")
-		} else {
-			return MapEvaluator{innerMap}, nil
-		}
-	}
-}
-
 func (expression Expression) Match(evaluator Evaluator) (bool, error) {
 	return expression.ast.match(evaluator)
 }

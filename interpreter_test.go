@@ -5,24 +5,9 @@ import (
 	"time"
 )
 
-func TestMatch(t *testing.T) {
-	testExpr := func(expression string, obj map[string]interface{}, expectedResult bool) {
-		expr, err := Parse(expression)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		result, err := expr.Match(MapEvaluator{obj})
-		if err != nil {
-			t.Error(err)
-		}
-
-		if result != expectedResult {
-			t.Errorf("Unexpected match result: %v for expression %s", result, expression)
-		}
-	}
-
-	testExpr(
+func TestBasicMatch(t *testing.T) {
+	testExprMap(
+		t,
 		"a:1 or b>2",
 		map[string]interface{}{
 			"a": "3",
@@ -30,7 +15,8 @@ func TestMatch(t *testing.T) {
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"a:1 or b > '2021-05-17T01:00:00Z'",
 		map[string]interface{}{
 			"a": "3",
@@ -38,49 +24,56 @@ func TestMatch(t *testing.T) {
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"a>=1",
 		map[string]interface{}{
 			"a": 0,
 		},
 		false)
 
-	testExpr(
+	testExprMap(
+		t,
 		"a<b",
 		map[string]interface{}{
 			"a": "a",
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"a<=b",
 		map[string]interface{}{
 			"a": "b",
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:'value1'",
 		map[string]interface{}{
 			"propStr": "value1",
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:'value*'",
 		map[string]interface{}{
 			"propStr": "value1",
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:value*",
 		map[string]interface{}{
 			"propStr": "value1",
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:'value2' or propInt:42",
 		map[string]interface{}{
 			"propStr": "value1",
@@ -88,7 +81,8 @@ func TestMatch(t *testing.T) {
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:'value2' or not propInt:42",
 		map[string]interface{}{
 			"propStr": "value1",
@@ -96,7 +90,8 @@ func TestMatch(t *testing.T) {
 		},
 		false)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:'value2' or nested:{int:13}",
 		map[string]interface{}{
 			"propStr": "value1",
@@ -106,47 +101,86 @@ func TestMatch(t *testing.T) {
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"propStr:('value1' or value2)",
 		map[string]interface{}{
 			"propStr": "value2",
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"prop:(1 or 2)",
 		map[string]interface{}{
 			"prop": []int{0, 2, 3},
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"prop:(0 and 5)",
 		map[string]interface{}{
 			"prop": []int{0, 2, 3},
 		},
 		false)
 
-	testExpr(
+	testExprMap(
+		t,
 		"prop:(2 and 3)",
 		map[string]interface{}{
 			"prop": []int{0, 2, 3},
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"prop:2",
 		map[string]interface{}{
 			"prop": []int{0, 2, 3},
 		},
 		true)
 
-	testExpr(
+	testExprMap(
+		t,
 		"prop:'a*'",
 		map[string]interface{}{
 			"prop": []string{"bbb", "abc", "ccc"},
 		},
 		true)
+}
+
+func TestReflectMatch(t *testing.T) {
+	type nested struct{ NestedProp string }
+	testExpr(
+		t,
+		"Prop:val and Nested:{NestedProp:val2}",
+		NewReflectEvaluator(
+			struct {
+				Prop   string
+				Nested nested
+			}{"val", nested{"val2"}}),
+		true)
+}
+
+func testExprMap(t *testing.T, expression string, obj map[string]interface{}, expectedResult bool) {
+	testExpr(t, expression, MapEvaluator{obj}, expectedResult)
+}
+
+func testExpr(t *testing.T, expression string, evaluator Evaluator, expectedResult bool) {
+	expr, err := Parse(expression)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := expr.Match(evaluator)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if result != expectedResult {
+		t.Errorf("Unexpected match result: %v for expression %s", result, expression)
+	}
 }
 
 var expr *Expression

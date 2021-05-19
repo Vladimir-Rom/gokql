@@ -38,7 +38,7 @@ type Evaluator interface {
 }
 ```
 
-Interface `Evaluator` is used for evaluating property values when matching them with query. Gokql provides two implementations of the Evaluator interface: `MapEvaluator` for filtering over maps and presented above `ReflectEvaluator` for filtering over structs using reflection. Example for filtering over maps:
+Interface `Evaluator` is used for evaluating property values when matching them with query. Gokql provides two implementations of the Evaluator interface: `MapEvaluator` for filtering over maps and presented above `ReflectEvaluator` for filtering over structs using reflection. Example of filtering over maps:
 
 ```go
 // Parse query

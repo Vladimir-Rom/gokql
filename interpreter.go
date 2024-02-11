@@ -30,6 +30,10 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		return false, err
 	}
 
+	if property == nil {
+		return false, nil
+	}
+
 	propertyValue := reflect.ValueOf(property)
 
 	if propertyValue.Kind() == reflect.Slice {
@@ -77,6 +81,10 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		return false, err
 	}
 
+	if property == nil {
+		return false, nil
+	}
+
 	propertyValue := reflect.ValueOf(property)
 	kind := propertyValue.Kind()
 	if kind != reflect.String && kind != reflect.Int && kind != reflect.Slice {
@@ -117,6 +125,9 @@ func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	property, err := evaluator.Evaluate(prop.Name)
 	if err != nil {
 		return false, err
+	}
+	if property == nil {
+		return false, nil
 	}
 
 	propertyValue := reflect.ValueOf(property)

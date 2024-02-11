@@ -30,6 +30,24 @@ func TestBasicMatch(t *testing.T) {
 		"a:1 or b>2",
 		map[string]interface{}{
 			"a": "3",
+			"c": 10,
+		},
+		false)
+
+	testExprMap(
+		t,
+		"a:3 or b>2",
+		map[string]interface{}{
+			"a": "3",
+			"c": 10,
+		},
+		true)
+
+	testExprMap(
+		t,
+		"a:1 or b>2",
+		map[string]interface{}{
+			"a": "3",
 			"b": 10,
 		},
 		true)
@@ -173,7 +191,7 @@ func TestReflectMatch(t *testing.T) {
 	type nested struct{ NestedProp string }
 	testExpr(
 		t,
-		"Prop:val and Nested:{NestedProp:val2}",
+		"Prop:val and Nested:{NestedProp:val2} or NotExisted:{Foo:Bar}",
 		NewReflectEvaluator(
 			struct {
 				Prop   string

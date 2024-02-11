@@ -10,13 +10,24 @@ type Evaluator interface {
 	GetSubEvaluator(propertyName string) (Evaluator, error)
 }
 
+type NullEvaluator struct {
+}
+
+func (NullEvaluator) Evaluate(propertyName string) (interface{}, error) {
+	return nil, nil
+}
+
+func (NullEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
+	return NullEvaluator{}, nil
+}
+
 type MapEvaluator struct {
 	Map map[string]interface{}
 }
 
 func (m MapEvaluator) Evaluate(propertyName string) (interface{}, error) {
 	if result, ok := m.Map[propertyName]; !ok {
-		return nil, errors.New("Property " + propertyName + " not found")
+		return nil, nil
 	} else {
 		return result, nil
 	}
@@ -64,6 +75,10 @@ func (eval ReflectEvaluator) GetSubEvaluator(propertyName string) (Evaluator, er
 	prop, err := eval.Evaluate(propertyName)
 	if err != nil {
 		return nil, err
+	}
+
+	if prop == nil {
+		return NullEvaluator{}, nil
 	}
 
 	return NewReflectEvaluator(prop), nil

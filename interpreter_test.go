@@ -27,6 +27,14 @@ type testStruct struct {
 func TestBasicMatch(t *testing.T) {
 	testExprMap(
 		t,
+		"propStr:('value1' or value2)",
+		map[string]interface{}{
+			"propStr": "value3",
+		},
+		false)
+
+	testExprMap(
+		t,
 		"a:1 or b>2",
 		map[string]interface{}{
 			"a": "3",

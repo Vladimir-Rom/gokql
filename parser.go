@@ -244,13 +244,13 @@ func (pm *propertyMatch) visit(visitor visitor) {
 		pm.ValueSubExpression.visit(visitor)
 	}
 	if pm.OrValues != nil {
-		for _, orValue := range pm.OrValues {
-			orValue.visit(visitor)
+		for i := range pm.OrValues {
+			pm.OrValues[i].visit(visitor)
 		}
 	}
 	if pm.AndValues != nil {
-		for _, andValue := range pm.AndValues {
-			andValue.visit(visitor)
+		for i := range pm.AndValues {
+			pm.AndValues[i].visit(visitor)
 		}
 	}
 

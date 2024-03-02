@@ -137,17 +137,6 @@ func TestBasicMatch(t *testing.T) {
 
 	testExprMap(
 		t,
-		"propStr:'value2' or nested:{int:13}",
-		map[string]interface{}{
-			"propStr": "value1",
-			"nested": map[string]interface{}{
-				"int": 13,
-			},
-		},
-		true)
-
-	testExprMap(
-		t,
 		"propStr:('value1' or value2)",
 		map[string]interface{}{
 			"propStr": "value2",
@@ -197,15 +186,52 @@ func TestBasicMatch(t *testing.T) {
 
 func TestReflectMatch(t *testing.T) {
 	type nested struct{ NestedProp string }
+	obj := struct {
+		Prop   string
+		Nested nested
+	}{"val", nested{"val2"}}
+
 	testExpr(
 		t,
 		"Prop:val and Nested:{NestedProp:val2} or NotExisted:{Foo:Bar}",
-		NewReflectEvaluator(
-			struct {
-				Prop   string
-				Nested nested
-			}{"val", nested{"val2"}}),
+		NewReflectEvaluator(obj),
 		true)
+
+	testExpr(
+		t,
+		"Prop:val and notexisted:{NestedProp:val2} or NotExisted:{Foo:Bar}",
+		NewReflectEvaluator(obj),
+		false)
+
+	testExpr(
+		t,
+		"Prop:val and Nested:{notexisted:val2} or NotExisted:{Foo:Bar}",
+		NewReflectEvaluator(obj),
+		false)
+
+	testExpr(
+		t,
+		"Nested:{notexisted:val2} or NotExisted:{Foo:Bar} or Prop:val",
+		NewReflectEvaluator(obj),
+		true)
+}
+
+func TestNested(t *testing.T) {
+	obj := map[string]interface{}{
+		"propStr": "value1",
+		"nested": map[string]interface{}{
+			"int": 13,
+			"nested2": map[string]interface{}{
+				"int": 42,
+			},
+		},
+	}
+
+	testExprMap(t, "propStr:'value2' or nested.int:13", obj, true)
+	testExprMap(t, "propStr:'value2' or nested:{int:13}", obj, true)
+	testExprMap(t, "propStr:'value2' or nested.nested2:{int:42}", obj, true)
+	testExprMap(t, "propStr:'value2' or nested.nonexisted:{int:42}", obj, false)
+	testExprMap(t, "propStr:'value2' or nonexisted.nonexisted:{int:42}", obj, false)
 }
 
 func TestTime(t *testing.T) {

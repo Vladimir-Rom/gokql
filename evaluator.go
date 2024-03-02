@@ -2,12 +2,53 @@ package gokql
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 )
 
 type Evaluator interface {
 	Evaluate(propertyName string) (interface{}, error)
 	GetSubEvaluator(propertyName string) (Evaluator, error)
+}
+
+type NestedPropsEvaluator struct {
+	inner Evaluator
+}
+
+func (e NestedPropsEvaluator) drilldown(propertyName string) (ev Evaluator, property string, err error) {
+	ev = e.inner
+	parts := strings.Split(propertyName, ".")
+	for i, part := range parts[:len(parts)-1] {
+		var err error
+		evPrev := ev
+		ev, err = ev.GetSubEvaluator(part)
+		if err != nil {
+			return nil, "", fmt.Errorf("unable to find property %s, Error: %w", part, err)
+		}
+		if ev == nil {
+			return evPrev, strings.Join(parts[i:], "."), nil
+		}
+	}
+	return ev, parts[len(parts)-1], nil
+}
+
+func (e NestedPropsEvaluator) Evaluate(propertyName string) (interface{}, error) {
+	ev, prop, err := e.drilldown(propertyName)
+	if err != nil {
+		return nil, err
+	}
+
+	return ev.Evaluate(prop)
+}
+
+func (e NestedPropsEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
+	ev, prop, err := e.drilldown(propertyName)
+	if err != nil {
+		return nil, err
+	}
+
+	return ev.GetSubEvaluator(prop)
 }
 
 type NullEvaluator struct {
@@ -35,7 +76,7 @@ func (m MapEvaluator) Evaluate(propertyName string) (interface{}, error) {
 
 func (m MapEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
 	if result, ok := m.Map[propertyName]; !ok {
-		return nil, errors.New("property " + propertyName + " not found")
+		return nil, nil
 	} else {
 		if innerMap, ok := result.(map[string]interface{}); !ok {
 			return nil, errors.New("property " + propertyName + " expected to be a 'map[string] interface{}'")
@@ -61,7 +102,7 @@ func (eval ReflectEvaluator) Evaluate(propertyName string) (interface{}, error) 
 
 	res := eval.value.FieldByName(propertyName)
 	if res == (reflect.Value{}) {
-		return nil, errors.New("property " + propertyName + " not found")
+		return nil, nil
 	}
 
 	return res.Interface(), nil

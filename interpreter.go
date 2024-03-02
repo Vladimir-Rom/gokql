@@ -7,7 +7,7 @@ import (
 )
 
 func (expression Expression) Match(evaluator Evaluator) (bool, error) {
-	return expression.ast.match(evaluator)
+	return expression.ast.match(NestedPropsEvaluator{evaluator})
 }
 
 func (prop propertyMatch) match(evaluator Evaluator) (bool, error) {
@@ -72,6 +72,11 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	if subEvaluator == nil {
+		return false, nil
+	}
+
 	return prop.ValueSubExpression.match(subEvaluator)
 }
 

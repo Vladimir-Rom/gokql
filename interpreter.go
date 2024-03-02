@@ -77,7 +77,26 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 		return false, nil
 	}
 
-	return prop.ValueSubExpression.match(subEvaluator)
+	if subEvaluator.GetEvaluatorKind() == EvaluatorKindObject {
+		return prop.ValueSubExpression.match(subEvaluator)
+	}
+
+	sliceEvals, err := subEvaluator.GetArraySubEvaluators()
+	if err != nil {
+		return false, err
+	}
+
+	for _, ev := range sliceEvals {
+		res, err := prop.ValueSubExpression.match(ev)
+		if err != nil {
+			return false, err
+		}
+
+		if res {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {

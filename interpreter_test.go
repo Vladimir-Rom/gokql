@@ -142,6 +142,25 @@ func TestBasicMatch(t *testing.T) {
 			"propStr": "value2",
 		},
 		true)
+}
+
+func TestArrays(t *testing.T) {
+	obj := map[string]interface{}{
+		"level1": map[string]interface{}{
+			"level2": map[string]interface{}{
+				"arr": []map[string]interface{}{
+					{
+						"prop1": "val1",
+						"prop2": "val2",
+						"prop3": "val3",
+					},
+				},
+			},
+		},
+	}
+	testExprMap(t, "level1.level2.arr:{prop1:val1 and prop2:val2}", obj, true)
+	testExprMap(t, "level1.level2.arr:{prop1:val1 and prop2:val3}", obj, false)
+	testExprMap(t, "level1.level2.arr:{prop1:val1 or prop2:val3}", obj, true)
 
 	testExprMap(
 		t,
@@ -185,11 +204,24 @@ func TestBasicMatch(t *testing.T) {
 }
 
 func TestReflectMatch(t *testing.T) {
-	type nested struct{ NestedProp string }
+	type nested struct {
+		NestedProp  string
+		NestedProp2 string
+	}
 	obj := struct {
-		Prop   string
-		Nested nested
-	}{"val", nested{"val2"}}
+		Prop        string
+		Nested      nested
+		NestedSlice []nested
+	}{
+		"val",
+		nested{"val2", ""},
+		[]nested{{"val1_1", "val2_1"}, {"val1_2", "val2_2"}}}
+
+	testExpr(t, "NestedSlice:{NestedProp:val1_1}", NewReflectEvaluator(obj), true)
+	testExpr(t, "NestedSlice:{NestedProp:val1_2}", NewReflectEvaluator(obj), true)
+	testExpr(t, "NestedSlice:{NestedProp:val1_3}", NewReflectEvaluator(obj), false)
+	testExpr(t, "NestedSlice:{NestedProp:(val1_3 or val1_1)}", NewReflectEvaluator(obj), true)
+	testExpr(t, "NestedSlice:{NestedProp:val1_2 and NestedProp2:val2_2}", NewReflectEvaluator(obj), true)
 
 	testExpr(
 		t,
@@ -293,7 +325,11 @@ func TestTypeAliases(t *testing.T) {
 }
 
 func testExprMap(t *testing.T, expression string, obj map[string]interface{}, expectedResult bool) {
-	testExpr(t, expression, MapEvaluator{obj}, expectedResult)
+	ev, err := NewMapEvaluator(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testExpr(t, expression, ev, expectedResult)
 }
 
 func test(t *testing.T, expression string, expectedResult bool, obj testStruct) {
@@ -327,6 +363,7 @@ func testType(t *testing.T, propertyName string, equalValue string, greaterValue
 }
 
 func testExpr(t *testing.T, expression string, evaluator Evaluator, expectedResult bool) {
+	t.Helper()
 	expr, err := Parse(expression)
 	if err != nil {
 		t.Fatal(err)

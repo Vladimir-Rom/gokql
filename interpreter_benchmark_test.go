@@ -5,7 +5,7 @@ import (
 )
 
 var expr Expression
-var evaluator MapEvaluator
+var evaluator Evaluator
 
 func init() {
 	var err error
@@ -14,10 +14,11 @@ func init() {
 		panic(err)
 	}
 
-	evaluator = MapEvaluator{
+	evaluator, err = NewMapEvaluator(
 		map[string]interface{}{
 			"prop1": 42,
-		}}
+		})
+
 	expr.Match(evaluator)
 }
 

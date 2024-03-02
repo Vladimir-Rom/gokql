@@ -104,6 +104,20 @@ func NewMapEvaluator(item any) (*MapEvaluator, error) {
 			arr:  v,
 			kind: EvaluatorKindSlice,
 		}, nil
+	case []any:
+		arr := make([]map[string]any, len(v))
+		for i := range arr {
+			if arrItem, ok := v[i].(map[string]any); ok {
+				arr[i] = arrItem
+			} else {
+				return nil, fmt.Errorf("unexpected array item type: %T. It should be map[string]any", v[i])
+			}
+		}
+		return &MapEvaluator{
+			arr:  arr,
+			kind: EvaluatorKindSlice,
+		}, nil
+
 	default:
 		return nil, fmt.Errorf("unexpected item type: %T", item)
 	}

@@ -156,9 +156,15 @@ func TestArrays(t *testing.T) {
 						"prop3": "val3",
 					},
 				},
+				"arr2": []any{
+					map[string]any{
+						"prop1": "val1",
+					},
+				},
 			},
 		},
 	}
+	testExprMap(t, "level1.level2.arr2:{prop1:val1}", obj, true)
 	testExprMap(t, "level1.level2:{prop:value and arr:{prop1:val1 and prop2:val2}}", obj, true)
 	testExprMap(t, "level1.notexisted.arr:{prop1:val1 and prop2:val2}", obj, false)
 	testExprMap(t, "level1.level2.arr:{prop1:val1 and prop2:val2}", obj, true)

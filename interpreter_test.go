@@ -154,6 +154,11 @@ func TestArrays(t *testing.T) {
 						"prop1": "val1",
 						"prop2": "val2",
 						"prop3": "val3",
+						"prop4": map[string]any{
+							"prop4c": map[string]any{
+								"prop4c_c": "val",
+							},
+						},
 					},
 				},
 				"arr2": []any{
@@ -164,6 +169,7 @@ func TestArrays(t *testing.T) {
 			},
 		},
 	}
+	testExprMap(t, "level1.level2.arr:{prop4.prop4c.prop4c_c:val}", obj, true)
 	testExprMap(t, "level1.level2.arr2:{prop1:val1}", obj, true)
 	testExprMap(t, "level1.level2:{prop:value and arr:{prop1:val1 and prop2:val2}}", obj, true)
 	testExprMap(t, "level1.notexisted.arr:{prop1:val1 and prop2:val2}", obj, false)
@@ -258,16 +264,23 @@ func TestReflectMatch(t *testing.T) {
 }
 
 func TestNested(t *testing.T) {
-	obj := map[string]interface{}{
+	obj := map[string]any{
 		"propStr": "value1",
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"int": 13,
-			"nested2": map[string]interface{}{
+			"nested2": map[string]any{
 				"int": 42,
+				"nested3": map[string]any{
+					"nested4": map[string]any{
+						"value": "val",
+					},
+				},
 			},
 		},
 	}
 
+	testExprMap(t, "nested.nested2:{nested3.nested4.value:val}", obj, true)
+	testExprMap(t, "nested.nested2:{nested3.nested4:{value:val}}", obj, true)
 	testExprMap(t, "propStr:'value2' or nested.int:13", obj, true)
 	testExprMap(t, "propStr:'value2' or nested:{int:13}", obj, true)
 	testExprMap(t, "propStr:'value2' or nested.nested2:{int:42}", obj, true)

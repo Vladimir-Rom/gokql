@@ -78,7 +78,7 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	}
 
 	if subEvaluator.GetEvaluatorKind() == EvaluatorKindObject {
-		return prop.ValueSubExpression.match(subEvaluator)
+		return prop.ValueSubExpression.match(NestedPropsEvaluator{subEvaluator})
 	}
 
 	sliceEvals, err := subEvaluator.GetArraySubEvaluators()
@@ -87,7 +87,7 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	}
 
 	for _, ev := range sliceEvals {
-		res, err := prop.ValueSubExpression.match(ev)
+		res, err := prop.ValueSubExpression.match(NestedPropsEvaluator{ev})
 		if err != nil {
 			return false, err
 		}

@@ -148,6 +148,7 @@ func TestArrays(t *testing.T) {
 	obj := map[string]interface{}{
 		"level1": map[string]interface{}{
 			"level2": map[string]interface{}{
+				"prop": "value",
 				"arr": []map[string]interface{}{
 					{
 						"prop1": "val1",
@@ -158,6 +159,8 @@ func TestArrays(t *testing.T) {
 			},
 		},
 	}
+	testExprMap(t, "level1.level2:{prop:value and arr:{prop1:val1 and prop2:val2}}", obj, true)
+	testExprMap(t, "level1.notexisted.arr:{prop1:val1 and prop2:val2}", obj, false)
 	testExprMap(t, "level1.level2.arr:{prop1:val1 and prop2:val2}", obj, true)
 	testExprMap(t, "level1.level2.arr:{prop1:val1 and prop2:val3}", obj, false)
 	testExprMap(t, "level1.level2.arr:{prop1:val1 or prop2:val3}", obj, true)

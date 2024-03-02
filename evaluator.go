@@ -105,7 +105,7 @@ func NewMapEvaluator(item any) (*MapEvaluator, error) {
 			kind: EvaluatorKindSlice,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unexpected item type: %t", item)
+		return nil, fmt.Errorf("unexpected item type: %T", item)
 	}
 }
 

@@ -1,6 +1,6 @@
 module github.com/vladimir-rom/gokql
 
-go 1.16
+go 1.18
 
 require (
 	github.com/alecthomas/participle v0.7.1 // indirect

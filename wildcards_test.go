@@ -11,11 +11,11 @@ func TestWildcardMatch(t *testing.T) {
 		}
 	}
 
+	test("", "*", true)
 	test("asd", "", true)
 	test("asd", "*eee*", false)
 	test("asd", "*eee*", false)
 	test("asd", "*asd*", true)
-	test("", "*", true)
 	test("asd", "a**d", true)
 	test("asd", "a*d", true)
 	test("asd", "asc", false)

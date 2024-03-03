@@ -342,6 +342,10 @@ func compare(property interface{}, atomic *atomicValue, comparer comparer) (bool
 }
 
 func compareWithConvertedType(property interface{}, atomic *atomicValue, comparer comparer) (bool, error) {
+	if atomic.wildcard.firstStar && atomic.wildcard.lastStar && len(atomic.wildcard.parts) == 0 {
+		return true, nil
+	}
+
 	propertyType := reflect.TypeOf(property)
 	if atomic.comparer == nil || atomic.valueType != propertyType {
 		var err error

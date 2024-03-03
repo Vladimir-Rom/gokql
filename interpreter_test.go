@@ -144,6 +144,18 @@ func TestBasicMatch(t *testing.T) {
 		true)
 }
 
+func TestEmptyCheck(t *testing.T) {
+	obj := map[string]any{
+		"prop": map[string]any{
+			"p": 22,
+		},
+		"arr": []string{"a", "b"},
+	}
+	testExprMap(t, "prop:*", obj, true)
+	testExprMap(t, "notexisted:*", obj, false)
+	testExprMap(t, "arr:*", obj, true)
+}
+
 func TestArrays(t *testing.T) {
 	obj := map[string]interface{}{
 		"level1": map[string]interface{}{

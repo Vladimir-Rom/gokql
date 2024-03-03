@@ -2,12 +2,14 @@ package gokql
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
 func (expression Expression) Match(evaluator Evaluator) (bool, error) {
-	return expression.ast.match(NestedPropsEvaluator{evaluator})
+	return expression.ast.match(evaluator)
 }
 
 func (prop propertyMatch) match(evaluator Evaluator) (bool, error) {
@@ -25,7 +27,7 @@ func (prop propertyMatch) match(evaluator Evaluator) (bool, error) {
 }
 
 func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
-	property, err := evaluator.Evaluate(prop.Name)
+	property, err := evaluateWithDrilldown(evaluator, prop.Name)
 	if err != nil {
 		return false, err
 	}
@@ -68,7 +70,7 @@ func matchAtomicValue(evaluator Evaluator, prop propertyMatch) (bool, error) {
 }
 
 func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
-	subEvaluator, err := evaluator.GetSubEvaluator(prop.Name)
+	subEvaluator, err := drilldownEvaluator(prop.Name, evaluator)
 	if err != nil {
 		return false, err
 	}
@@ -78,7 +80,7 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	}
 
 	if subEvaluator.GetEvaluatorKind() == EvaluatorKindObject {
-		return prop.ValueSubExpression.match(NestedPropsEvaluator{subEvaluator})
+		return prop.ValueSubExpression.match(subEvaluator)
 	}
 
 	sliceEvals, err := subEvaluator.GetArraySubEvaluators()
@@ -87,7 +89,7 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	}
 
 	for _, ev := range sliceEvals {
-		res, err := prop.ValueSubExpression.match(NestedPropsEvaluator{ev})
+		res, err := prop.ValueSubExpression.match(ev)
 		if err != nil {
 			return false, err
 		}
@@ -99,8 +101,31 @@ func matchSubExpression(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	return false, nil
 }
 
+func drilldownEvaluator(propertyNames []string, ev Evaluator) (Evaluator, error) {
+	for _, name := range propertyNames {
+		subev, err := ev.GetSubEvaluator(name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to find property %s, Error: %w", name, err)
+		}
+		if subev == nil {
+			return nil, nil
+		}
+		ev = subev
+	}
+	return ev, nil
+}
+
+func evaluateWithDrilldown(evaluator Evaluator, propName []string) (any, error) {
+	subEvaluator, err := drilldownEvaluator(propName[:len(propName)-1], evaluator)
+	if err != nil {
+		return false, err
+	}
+
+	return subEvaluator.Evaluate(propName[len(propName)-1])
+}
+
 func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
-	property, err := evaluator.Evaluate(prop.Name)
+	property, err := evaluateWithDrilldown(evaluator, prop.Name)
 	if err != nil {
 		return false, err
 	}
@@ -146,7 +171,7 @@ func matchOrValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 }
 
 func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
-	property, err := evaluator.Evaluate(prop.Name)
+	property, err := evaluateWithDrilldown(evaluator, prop.Name)
 	if err != nil {
 		return false, err
 	}
@@ -157,7 +182,7 @@ func matchAndValues(evaluator Evaluator, prop propertyMatch) (bool, error) {
 	propertyValue := reflect.ValueOf(property)
 	kind := propertyValue.Kind()
 	if kind != reflect.Slice {
-		return false, errors.New("property " + prop.Name + " is expected to be a slice")
+		return false, errors.New("property " + strings.Join(prop.Name, ".") + " is expected to be a slice")
 	}
 
 	sliceLen := propertyValue.Len()

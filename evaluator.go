@@ -3,7 +3,6 @@ package gokql
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 type EvaluatorKind string
@@ -18,53 +17,6 @@ type Evaluator interface {
 	GetSubEvaluator(propertyName string) (Evaluator, error)
 	GetEvaluatorKind() EvaluatorKind
 	GetArraySubEvaluators() ([]Evaluator, error)
-}
-
-type NestedPropsEvaluator struct {
-	inner Evaluator
-}
-
-func (e NestedPropsEvaluator) drilldown(propertyName string) (ev Evaluator, property string, err error) {
-	ev = e.inner
-	parts := strings.Split(propertyName, ".")
-	for i, part := range parts[:len(parts)-1] {
-		var err error
-		evPrev := ev
-		ev, err = ev.GetSubEvaluator(part)
-		if err != nil {
-			return nil, "", fmt.Errorf("unable to find property %s, Error: %w", part, err)
-		}
-		if ev == nil {
-			return evPrev, strings.Join(parts[i:], "."), nil
-		}
-	}
-	return ev, parts[len(parts)-1], nil
-}
-
-func (e NestedPropsEvaluator) Evaluate(propertyName string) (interface{}, error) {
-	ev, prop, err := e.drilldown(propertyName)
-	if err != nil {
-		return nil, err
-	}
-
-	return ev.Evaluate(prop)
-}
-
-func (e NestedPropsEvaluator) GetSubEvaluator(propertyName string) (Evaluator, error) {
-	ev, prop, err := e.drilldown(propertyName)
-	if err != nil {
-		return nil, err
-	}
-
-	return ev.GetSubEvaluator(prop)
-}
-
-func (e NestedPropsEvaluator) GetEvaluatorKind() EvaluatorKind {
-	return e.inner.GetEvaluatorKind()
-}
-
-func (e NestedPropsEvaluator) GetArraySubEvaluators() ([]Evaluator, error) {
-	return e.inner.GetArraySubEvaluators()
 }
 
 type NullEvaluator struct {

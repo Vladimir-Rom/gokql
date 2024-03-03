@@ -20,7 +20,7 @@ type atomicValue struct {
 }
 
 type propertyMatch struct {
-	Name               string        `@Literal`
+	Name               []string      `@Literal ('.' @Literal)*`
 	Operation          string        `@(':' | '<' | '>' | '<=' | '>=')`
 	ValueSubExpression *expression   `( ('{' @@ '}')`
 	AtomicValue        *atomicValue  `| @@`
@@ -52,7 +52,7 @@ var (
 	lexer, _ = stateful.NewSimple([]stateful.Rule{
 		{"QuotedString", `'[^']*'`, nil},
 		{"DquotedString", `"[^"]*"`, nil},
-		{"Literal", `[a-zA-Z0-9.*\\-_]+`, nil},
+		{"Literal", `[a-zA-Z0-9*\\-_]+`, nil},
 		{"<=", `<=`, nil},
 		{">=", `>=`, nil},
 		{"whitespace", `[ \t\r\n]+`, nil},
@@ -132,7 +132,7 @@ func (prop propertyMatch) String() string {
 		valueStr += ")"
 	}
 
-	return prop.Name + prop.Operation + valueStr
+	return strings.Join(prop.Name, ".") + prop.Operation + valueStr
 }
 
 func (expr subExpression) String() string {

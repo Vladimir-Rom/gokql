@@ -14,6 +14,7 @@ func TestParse(t *testing.T) {
 		}
 	}
 
+	testExpr("a.b.c.d:'1'", "a.b.c.d:1")
 	testExpr("a:'1'", "a:1")
 	testExpr("a_b:'1'", "a_b:1")
 	testExpr("a:c or b:2", "(a:c or b:2)")

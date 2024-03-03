@@ -16,7 +16,10 @@ func init() {
 
 	evaluator, err = NewMapEvaluator(
 		map[string]interface{}{
-			"prop1": 42,
+			"prop1":  42,
+			"prop2:": "asdasdasd",
+			"msg":    "asdasdac LDS CA, LDS CSD LSD ASD CSDqefosmd,md,mdklf",
+			"level":  "info",
 		})
 
 	expr.Match(evaluator)

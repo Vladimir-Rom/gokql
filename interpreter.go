@@ -118,11 +118,11 @@ func drilldownEvaluator(propertyNames []string, ev Evaluator) (Evaluator, error)
 func evaluateWithDrilldown(evaluator Evaluator, propName []string) (any, error) {
 	subEvaluator, err := drilldownEvaluator(propName[:len(propName)-1], evaluator)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if subEvaluator == nil {
-		return false, nil
+		return nil, nil
 	}
 
 	return subEvaluator.Evaluate(propName[len(propName)-1])

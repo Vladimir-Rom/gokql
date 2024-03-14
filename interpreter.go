@@ -121,6 +121,10 @@ func evaluateWithDrilldown(evaluator Evaluator, propName []string) (any, error) 
 		return false, err
 	}
 
+	if subEvaluator == nil {
+		return false, nil
+	}
+
 	return subEvaluator.Evaluate(propName[len(propName)-1])
 }
 

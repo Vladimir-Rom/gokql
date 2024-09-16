@@ -157,11 +157,11 @@ func TestEmptyCheck(t *testing.T) {
 }
 
 func TestArrays(t *testing.T) {
-	obj := map[string]interface{}{
-		"level1": map[string]interface{}{
-			"level2": map[string]interface{}{
+	obj := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
 				"prop": "value",
-				"arr": []map[string]interface{}{
+				"arr": []map[string]any{
 					{
 						"prop1": "val1",
 						"prop2": "val2",
@@ -176,6 +176,14 @@ func TestArrays(t *testing.T) {
 				"arr2": []any{
 					map[string]any{
 						"prop1": "val1",
+						"arr3": []map[string]any{
+							{
+								"prop": "arr3_prop1",
+							},
+							{
+								"prop": "arr3_prop2",
+							},
+						},
 					},
 				},
 			},
